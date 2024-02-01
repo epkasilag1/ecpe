@@ -176,6 +176,27 @@ public abstract class CellLikeSimulator extends AbstractSelectionExecutionSimula
 		}
 	}
 
-	
+	/* START */
+	protected void printInfoMembraneTerminal(ChangeableMembrane membrane) {	//JM: I don't get it, why did it become a membrane
+		//System.out.println("printInfoMembrane -- START");
+		if (!(membrane instanceof CellLikeMembrane))
+			throw new IllegalArgumentException("Illegal arguments");
+		CellLikeMembrane m = (CellLikeMembrane)membrane;
+		System.out.println("    " + getHeadAfter(m));	//JM: Compare charge, and energy
+		System.out.println("    Multiset: " + m.getMultiSet());	//JM: Compare multisets ; in case of comparing prev to next configuration
+		if (!m.getChildMembranes().isEmpty())
+			System.out.println(
+					"    Internal membranes count: "
+							+ m.getChildMembranes().size());
+		if (!m.isSkinMembrane())
+			System.out.println(
+					"    Parent membrane ID: "
+							+ ((CellLikeNoSkinMembrane) m).getParentMembrane()
+									.getId());
 
+		//System.out.println("printInfoMembrane -- END");
+		System.out.println();
+
+	}
+	/* END */
 }
