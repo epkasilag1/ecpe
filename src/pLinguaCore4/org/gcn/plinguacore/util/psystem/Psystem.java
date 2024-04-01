@@ -24,7 +24,7 @@
 package org.gcn.plinguacore.util.psystem;
 
 import java.io.Serializable;
-
+import java.util.ArrayList;
 import java.util.Collection;
 
 
@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.Iterator;
+import java.util.List;
 
 import org.gcn.plinguacore.simulator.CreateSimulator;
 import org.gcn.plinguacore.simulator.ISimulator;
@@ -84,6 +85,18 @@ public abstract class Psystem implements Serializable {
 	private int ecpe_priority = 0;
 
 	public static final transient Collection<? extends Membrane> emptyMembranes = new HashSet<Membrane>();
+
+	/* START */
+	private int n_steps = 0;
+
+	private boolean choice;
+
+	private List<IRule> evolutionRules = new ArrayList<IRule>();
+
+	private List<IRule> communicationRules = new ArrayList<IRule>();
+
+
+	/* END */
 	
 	protected String getModelName() {
 		return apf.getModelName();
@@ -365,4 +378,41 @@ public abstract class Psystem implements Serializable {
 		return ecpe_priority;
 	}
 
+	/* START */
+	public void set_n_steps(int n_steps){
+		this.n_steps = n_steps;
+	}
+
+	public int get_n_steps(){
+		return this.n_steps;
+	}
+
+	public void set_choice(boolean choice){
+		this.choice = choice;
+	}
+
+	public boolean get_choice(){
+		return this.choice;
+	}
+
+	public void groupRules(){
+		RulesSet rules = this.getRules();
+		Iterator<IRule> it = rules.iterator();
+		while (it.hasNext()){
+			IRule r = it.next();
+			if (r.isEvolution()){
+				System.out.println(r);
+				this.evolutionRules.add(r);
+			}
+			else if (r.isSendIn() || r.isSendOut() || r.isAntiport()){
+				System.out.println(r);
+				this.communicationRules.add(r);
+			}
+			else{
+				System.out.println(r);
+			}
+		}
+	}
+
+	/* END */
 }

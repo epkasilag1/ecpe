@@ -60,6 +60,10 @@ import org.gcn.plinguacore.util.psystem.rule.IPriorityRule;
 
 import org.gcn.plinguacore.util.RandomNumbersGenerator;
 
+/* START */
+import java.io.*;
+import java.util.Scanner;
+/* END */
 
 /**
  * An abstract class for simulators which execute simulation steps in three microsteps:
@@ -493,12 +497,100 @@ public abstract class AbstractSelectionExecutionSimulator extends AbstractSimula
 		p.getSecond().add(r, count);
 	}
 	
+	/* START */
+	private void printConfiguration(){
+		System.out.println(
+					"    CONFIGURATION: " + (currentConfig.getNumber()));
+		Iterator<? extends Membrane> it = currentConfig.getMembraneStructure().getAllMembranes().iterator();
+		while (it.hasNext())
+			printInfoMembraneTerminal((ChangeableMembrane)it.next());
+			if (!currentConfig.getEnvironment().isEmpty()) {
+				System.out.println(
+						"    ENVIRONMENT: " + currentConfig.getEnvironment());	//JM: environment
+				System.out.println();
+			}	
+	}
+
+	protected void userSelectRules(){
+		int n = getPsystem().get_n_steps();
+		int n_steps;
+		Scanner chooseRules = new Scanner(System.in);
+		Scanner scanner = new Scanner(System.in);
+
+		if (currentConfig.getNumber() == 0){
+			System.out.print("Choose rules (y/n): ");
+			char choice = chooseRules.next().charAt(0);
+			if (choice == 'y'){
+				getPsystem().set_choice(true);
+				System.out.println("CONFIGURATION " + currentConfig.getNumber());
+				printMaxExecutions();
+				System.out.print("Number of steps: ");
+				n_steps = scanner.nextInt();
+				if (n_steps <= 1){
+					System.out.println("INPUT RULES for CONFIGURATION " + currentConfig.getNumber());
+				}
+				else{
+					n_steps -= 1;
+					getPsystem().set_n_steps(n_steps);
+				}
+			}
+			
+		}
+		else if (getPsystem().get_choice()){
+			if (n == 0){
+				System.out.println("CONFIGURATION " + currentConfig.getNumber());
+				printMaxExecutions();
+				System.out.println("INPUT RULES for CONFIGURATION " + currentConfig.getNumber());
+				System.out.print("Number of steps: ");
+				n_steps = scanner.nextInt();
+				n_steps -= 1;
+				getPsystem().set_n_steps(n_steps);
+			}
+			else{
+				getPsystem().set_n_steps(getPsystem().get_n_steps()-1);
+			}
+ 
+		}
+	}
+
+	protected void printRules(Iterator<? extends Membrane> it1, Iterator<? extends Membrane> it2){
+
+		List<Pair<IRule, Pair<ChangeableMembrane, ChangeableMembrane>>> rules = new ArrayList<Pair<IRule, Pair<ChangeableMembrane, ChangeableMembrane>>>();
+		
+		while (it1.hasNext()){
+			ChangeableMembrane tempMembrane = (ChangeableMembrane) it1.next();
+			ChangeableMembrane m = (ChangeableMembrane)it2.next();
+
+			Iterator<IRule> it = getPsystem().getRules().iterator(
+							tempMembrane.getLabel(),
+							tempMembrane.getLabelObj().getEnvironmentID(),
+							tempMembrane.getCharge(),true);	
+			while (it.hasNext()){
+				Pair<IRule, Pair<ChangeableMembrane, ChangeableMembrane>> triple = new Pair<IRule,Pair<ChangeableMembrane,ChangeableMembrane>>(null, null);
+				Pair<ChangeableMembrane, ChangeableMembrane> memb = new Pair<ChangeableMembrane,ChangeableMembrane>(tempMembrane, m);
+				triple.setFirst(it.next());
+				triple.setSecond(memb);
+				// System.out.println(triple);
+				rules.add(triple);
+			}
+		}
+		Iterator<Pair<IRule, Pair<ChangeableMembrane, ChangeableMembrane>>> iter = rules.iterator();
+		while (iter.hasNext()){
+			Pair<IRule, Pair<ChangeableMembrane, ChangeableMembrane>> var = iter.next();
+			System.out.print(var.getFirst());
+			System.out.print("\t");
+			System.out.println(var.getSecond());
+		}
+		System.out.println("--------------------------------");
+	}
+
+	/* END */
 	
 	
 	protected void microStepSelectRules() throws PlinguaCoreException {
 
 		microStepSelectRules(currentConfig,(Configuration)currentConfig.clone());
-
+		
 	}
 	
 
@@ -521,8 +613,8 @@ public abstract class AbstractSelectionExecutionSimulator extends AbstractSimula
 
 		it = tmpCnf.getMembraneStructure().getAllMembranes().iterator();
 		it1 = cnf.getMembraneStructure().getAllMembranes().iterator();
+		printRules(it1, it);
 		if(getPsystem().getECPePriority()!=0){
-
 			boolean applied=false;
 			while (it.hasNext()) {
 				ChangeableMembrane tempMembrane = (ChangeableMembrane) it.next();
@@ -687,7 +779,37 @@ public abstract class AbstractSelectionExecutionSimulator extends AbstractSimula
 		return applicable;
 	}
 
+	/* START */
+	protected void printMaxExecutions(){
+		System.out.println("RULES " + currentConfig.getNumber());
+		System.out.println("Max Count:\tRule");
+		Iterator<? extends Membrane> itMembrane = currentConfig.getMembraneStructure().getAllMembranes().iterator();
+		
+		// while (it.hasNext()) {
+		// 	ChangeableMembrane m = (ChangeableMembrane) it.next();
+		// 	m.setEnergyTemp();
+		// }
 
+		while (itMembrane.hasNext()) {
+			ChangeableMembrane m = (ChangeableMembrane) itMembrane.next();
+			m.setEnergyTemp();
+			Iterator<IRule> itRule = getPsystem().getRules().iterator(
+									m.getLabel(),
+									m.getLabelObj().getEnvironmentID(),
+									m.getCharge(),true);
+			while (itRule.hasNext()){
+				IRule r = itRule.next();
+				long count = r.countExecutions(m);
+				if (count > 0){
+					System.out.print("\t" + count + "\t");
+					System.out.println(r);
+				}
+				
+			}
+		}
+	}
+
+	/* END */
 	/**
 	 * Select rules for a specific membrane
 	 * 
@@ -703,5 +825,10 @@ public abstract class AbstractSelectionExecutionSimulator extends AbstractSimula
 	
 	protected abstract void removeLeftHandRuleObjects(ChangeableMembrane membrane,
 			IRule r, long count);
+
+	/* START */
+	protected abstract void printInfoMembraneTerminal(ChangeableMembrane membrane);
+	
+	/* END */
 
 }
