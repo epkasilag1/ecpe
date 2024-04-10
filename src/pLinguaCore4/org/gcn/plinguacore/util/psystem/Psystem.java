@@ -91,6 +91,8 @@ public abstract class Psystem implements Serializable {
 
 	private boolean choice;
 
+	private boolean hasSelectedRules = true;
+
 	private List<IRule> evolutionRules = new ArrayList<IRule>();
 
 	private List<IRule> communicationRules = new ArrayList<IRule>();
@@ -393,6 +395,14 @@ public abstract class Psystem implements Serializable {
 
 	public boolean get_choice(){
 		return this.choice;
+	}
+
+	public void set_hasSelectedRules(boolean flag){
+		this.hasSelectedRules = flag;
+	}
+
+	public boolean hasSelectedRules(){
+		return this.hasSelectedRules;
 	}
 
 	public void groupRules(){
