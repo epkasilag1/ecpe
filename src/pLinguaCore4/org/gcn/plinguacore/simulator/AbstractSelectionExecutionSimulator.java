@@ -65,6 +65,8 @@ import java.io.*;
 import java.util.Scanner;
 /* END */
 
+import javax.sound.midi.SysexMessage;
+
 /**
  * An abstract class for simulators which execute simulation steps in three microsteps:
  * init step, select rules for the whole configuration, execute rules for the whole configuration
@@ -551,6 +553,54 @@ public abstract class AbstractSelectionExecutionSimulator extends AbstractSimula
 		}
 	}
 
+
+	protected void printApplicableRules(Iterator<? extends Membrane> iter){
+		boolean hasApplicableRules = false;
+		System.out.println("APPLICABLE RULES");
+		System.out.println("Max Count\tRule");
+		while (iter.hasNext()){
+			ChangeableMembrane m = (ChangeableMembrane)iter.next();
+			Iterator<IRule> it = getPsystem().getRules().iterator(
+							m.getLabel(),
+							m.getLabelObj().getEnvironmentID(),
+							m.getCharge(),true);
+			
+			while (it.hasNext()){
+				IRule r = it.next();
+				long count = r.countExecutions(m);
+				if (count > 0){
+					hasApplicableRules = true;
+					System.out.print("\t" + count + "\t" + r);
+					if (r.isEvolution()){
+						System.out.println("\t(EVOL)");
+					}
+					else if (r.isSendIn() || r.isSendOut() || r.isAntiport()){
+						System.out.println("\t(COMM)");
+					}
+				}
+			}	
+		}
+		if (!hasApplicableRules){
+			System.out.println("-- NO APPLICABLE RULES --");
+		}
+		System.out.println("\n");
+	}
+
+	protected void executeSelectedRule(IRule r, Iterator<? extends Membrane> membIterator){
+		while (membIterator.hasNext()){
+			ChangeableMembrane memb = (ChangeableMembrane)membIterator.next();
+			Iterator<IRule> it = getPsystem().getRules().iterator(
+							memb.getLabel(),
+							memb.getLabelObj().getEnvironmentID(),
+							memb.getCharge(),true);
+			while (it.hasNext()) {
+				if (r == it.next()){
+					System.out.println(r + " " + memb);
+					break;
+				}
+			}
+		}
+	}
 
 	/* END */
 	
