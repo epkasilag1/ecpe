@@ -411,17 +411,20 @@ public abstract class Psystem implements Serializable {
 		while (it.hasNext()){
 			IRule r = it.next();
 			if (r.isEvolution()){
-				System.out.println(r);
 				this.evolutionRules.add(r);
 			}
 			else if (r.isSendIn() || r.isSendOut() || r.isAntiport()){
-				System.out.println(r);
 				this.communicationRules.add(r);
 			}
-			else{
-				System.out.println(r);
-			}
 		}
+	}
+
+	public List<IRule> getEvolutionRules(){
+		return this.evolutionRules;
+	}
+
+	public List<IRule> getCommunicationRules(){
+		return this.communicationRules;
 	}
 
 	/* END */
