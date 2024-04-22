@@ -63,6 +63,7 @@ import org.gcn.plinguacore.util.RandomNumbersGenerator;
 /* START */
 import java.io.*;
 import java.util.Scanner;
+import java.util.Collections;
 /* END */
 
 import javax.sound.midi.SysexMessage;
@@ -520,8 +521,10 @@ public abstract class AbstractSelectionExecutionSimulator extends AbstractSimula
 		Scanner scanner = new Scanner(System.in);
 
 		if (currentConfig.getNumber() == 0){
+			getPsystem().groupRules();
 			System.out.print("Choose rules (y/n): ");
 			char choice = chooseRules.next().charAt(0);
+			// char choice = 'n';
 			if (choice == 'y'){
 				getPsystem().set_choice(true);
 			}
@@ -534,7 +537,7 @@ public abstract class AbstractSelectionExecutionSimulator extends AbstractSimula
 			printMaxExecutions();
 			System.out.println("------------------------------------------");
 			if (getPsystem().hasSelectedRules()){
-				System.out.print("Number of steps: ");
+				System.out.print("Number of steps (Input '0' to let system finish the simulation): ");
 				n_steps = scanner.nextInt();
 				getPsystem().set_n_steps(n_steps);
 				getPsystem().set_hasSelectedRules(false);
@@ -551,39 +554,6 @@ public abstract class AbstractSelectionExecutionSimulator extends AbstractSimula
 				getPsystem().set_n_steps(getPsystem().get_n_steps()-1);
 			}
 		}
-	}
-
-
-	protected void printApplicableRules(Iterator<? extends Membrane> iter){
-		boolean hasApplicableRules = false;
-		System.out.println("APPLICABLE RULES");
-		System.out.println("Max Count\tRule");
-		while (iter.hasNext()){
-			ChangeableMembrane m = (ChangeableMembrane)iter.next();
-			Iterator<IRule> it = getPsystem().getRules().iterator(
-							m.getLabel(),
-							m.getLabelObj().getEnvironmentID(),
-							m.getCharge(),true);
-			
-			while (it.hasNext()){
-				IRule r = it.next();
-				long count = r.countExecutions(m);
-				if (count > 0){
-					hasApplicableRules = true;
-					System.out.print("\t" + count + "\t" + r);
-					if (r.isEvolution()){
-						System.out.println("\t(EVOL)");
-					}
-					else if (r.isSendIn() || r.isSendOut() || r.isAntiport()){
-						System.out.println("\t(COMM)");
-					}
-				}
-			}	
-		}
-		if (!hasApplicableRules){
-			System.out.println("-- NO APPLICABLE RULES --");
-		}
-		System.out.println("\n");
 	}
 
 	protected void executeSelectedRule(IRule r, Iterator<? extends Membrane> membIterator){
@@ -630,37 +600,53 @@ public abstract class AbstractSelectionExecutionSimulator extends AbstractSimula
 
 		it = tmpCnf.getMembraneStructure().getAllMembranes().iterator();
 		it1 = cnf.getMembraneStructure().getAllMembranes().iterator();
+		/* START */
 		userSelectRules(tmpCnf, cnf);
-		
+		/* END */
 		if(getPsystem().getECPePriority()!=0){
 			boolean applied=false;
-			while (it.hasNext()) {
-				ChangeableMembrane tempMembrane = (ChangeableMembrane) it.next();
-				ChangeableMembrane m = (ChangeableMembrane)it1.next();
+			// while (it.hasNext()) {
+			// 	ChangeableMembrane tempMembrane = (ChangeableMembrane) it.next();
+			// 	ChangeableMembrane m = (ChangeableMembrane)it1.next();
 
-				if(microStepSelectRules(m,tempMembrane,false)){
-					applied=true;
-				}
+			// 	if(microStepSelectRules(m,tempMembrane,false)){
+			// 		applied=true;
+			// 	}
 
+			// }
+
+			/* START */
+			if (microStepSelectRules(tmpCnf, cnf, false)){
+				applied=true;
 			}
+			/* END */
+
 			if(!applied){
-					it = tmpCnf.getMembraneStructure().getAllMembranes().iterator();
-		    	it1 = cnf.getMembraneStructure().getAllMembranes().iterator();
-				while (it.hasNext()) {
-				ChangeableMembrane tempM = (ChangeableMembrane) it.next();
-				ChangeableMembrane mem = (ChangeableMembrane)it1.next();
-				microStepSelectRules(mem, tempM, true);
-				}
+				// it = tmpCnf.getMembraneStructure().getAllMembranes().iterator();
+		    	// it1 = cnf.getMembraneStructure().getAllMembranes().iterator();
+				// while (it.hasNext()) {
+				// 	ChangeableMembrane tempM = (ChangeableMembrane) it.next();
+				// 	ChangeableMembrane mem = (ChangeableMembrane)it1.next();
+				// 	microStepSelectRules(mem, tempM, true);
+				// }
+
+				/* START */
+				microStepSelectRules(tmpCnf, cnf, true);
+				/* END */
 			}
 		}
 
 		/*For nonECPe models */
 		else{
-			while (it.hasNext()) {
-				ChangeableMembrane tempMembrane = (ChangeableMembrane) it.next();
-				ChangeableMembrane m = (ChangeableMembrane)it1.next();
-				microStepSelectRules(m,tempMembrane);
-			}
+			// while (it.hasNext()) {
+			// 	ChangeableMembrane tempMembrane = (ChangeableMembrane) it.next();
+			// 	ChangeableMembrane m = (ChangeableMembrane)it1.next();
+			// 	microStepSelectRules(m,tempMembrane);
+			// }
+			
+			/* START */
+			microStepSelectRulesCME(tmpCnf, cnf);
+			/* END */
 		}
 
 	}
@@ -733,6 +719,103 @@ public abstract class AbstractSelectionExecutionSimulator extends AbstractSimula
 		return applicable;
 
 	}
+	
+	/* START */
+	protected boolean microStepSelectRules(Configuration tmpCnf, Configuration cnf, boolean checkedPrio) {
+			int ecpe_priority = getPsystem().getECPePriority();
+			boolean applicable=false;
+			int n=2;
+
+				for (int i=n;i>0;i--)
+				{
+			
+					applicable=isPrioApplicable(ecpe_priority, i, tmpCnf, cnf);
+					
+				}
+				if(checkedPrio){
+
+					for (int i=n;i>0;i--)
+					{
+						if(ecpe_priority==1){
+							applicable=isPrioApplicable(2, i, tmpCnf, cnf);
+						}
+						else{
+							applicable=isPrioApplicable(1, i, tmpCnf, cnf);
+						}
+					}		
+									
+				}
+		return applicable;
+
+	}
+
+	public boolean isPrioApplicable(int prio, int i, Configuration tmpCnf, Configuration cnf){
+		boolean applicable=false;
+		switch(prio){
+			case 1:
+					Collections.shuffle(getPsystem().getEvolutionRules());
+					Iterator<IRule> itEvol = getPsystem().getEvolutionRules().iterator();		
+					while (itEvol.hasNext()) {
+						IRule r = itEvol.next();
+						// System.out.println(r);
+						applicable = locateAndExecuteRule(r, tmpCnf, cnf, i);
+					}
+
+			break;
+
+			case 2:
+					Collections.shuffle(getPsystem().getCommunicationRules());
+					Iterator<IRule> itComm = getPsystem().getCommunicationRules().iterator();		
+					while (itComm.hasNext()) {
+						IRule r = itComm.next();
+						// System.out.println(r);	
+						applicable = locateAndExecuteRule(r, tmpCnf, cnf, i);
+					}
+
+			break;
+		}
+		return applicable;
+	}
+	
+	public boolean locateAndExecuteRule(IRule r, Configuration tmpCnf, Configuration cnf, int i){
+		boolean applicable=false;
+		Iterator<? extends Membrane> it1 = tmpCnf.getMembraneStructure().getAllMembranes().iterator();
+		Iterator<? extends Membrane> it2 = cnf.getMembraneStructure().getAllMembranes().iterator();
+		while (it1.hasNext()){
+			ChangeableMembrane tempMembrane = (ChangeableMembrane) it1.next();
+			ChangeableMembrane m = (ChangeableMembrane)it2.next();
+
+			Iterator<IRule> it = getPsystem().getRules().iterator(
+							tempMembrane.getLabel(),
+							tempMembrane.getLabelObj().getEnvironmentID(),
+							tempMembrane.getCharge(),true);	
+			while (it.hasNext()){
+				IRule rule = it.next();
+				if (rule.getRuleId() == r.getRuleId()){
+					long count = r.countExecutions(tempMembrane); 	
+
+					if (!(r instanceof IPriorityRule) && count>0 && i!=1){
+						applicable=true;
+						count = RandomNumbersGenerator.getInstance().nextLong(count+1);
+						// System.out.println("Iteration - " + i);
+					}
+					if (count > 0) {
+						// if (i == 1){
+						// 	System.out.println("Iteration - " + i);
+						// }
+						applicable=true;
+						r.executeDummy(tempMembrane, (int)count);
+						selectRule(r, m, count);
+						removeLeftHandRuleObjects(tempMembrane, r, count);
+					}
+					break;
+				}
+			}
+		}
+		return applicable;
+	}
+
+	/* END */
 
 	public boolean isPrioApplicable(int prio,int i,Iterator<IRule> itr, ChangeableMembrane m, ChangeableMembrane temp){
 		Iterator<IRule> it= itr;
@@ -753,7 +836,7 @@ public abstract class AbstractSelectionExecutionSimulator extends AbstractSimula
 
 						if (!(r instanceof IPriorityRule) && count>0 && i!=1){
 							applicable=true;
-							count = RandomNumbersGenerator.getInstance().nextLong(count);	
+							count = RandomNumbersGenerator.getInstance().nextLong(count+1);	
 						}
 						if (count > 0) {
 							applicable=true;
@@ -783,7 +866,7 @@ public abstract class AbstractSelectionExecutionSimulator extends AbstractSimula
 						long count = r.countExecutions(temp); 	
 						if (!(r instanceof IPriorityRule) && count>0 && i!=1){
 							applicable=true;
-							count = RandomNumbersGenerator.getInstance().nextLong(count);	
+							count = RandomNumbersGenerator.getInstance().nextLong(count+1);	
 							}
 						if (count > 0) {
 							applicable=true;
@@ -832,7 +915,7 @@ public abstract class AbstractSelectionExecutionSimulator extends AbstractSimula
 
 		Scanner scanner = new Scanner(System.in);
 		while (true){
-			System.out.print("Enter rule number: ");
+			System.out.print("Enter rule number (Input '0' to end rule selection): ");
 			int ruleNumber = scanner.nextInt();
 			if (ruleNumber == 0){
 				System.out.println();
@@ -864,7 +947,8 @@ public abstract class AbstractSelectionExecutionSimulator extends AbstractSimula
 				}
 			}
 
-			System.out.println("SUCCESS/FAIL\n");
+			System.out.println();
+			
 
 		}
 		
@@ -890,7 +974,7 @@ public abstract class AbstractSelectionExecutionSimulator extends AbstractSimula
 
 	/* START */
 	protected abstract void printInfoMembraneTerminal(ChangeableMembrane membrane);
-	
+	protected abstract void microStepSelectRulesCME(Configuration tempMembrane, Configuration membrane);
 	/* END */
 
 }
