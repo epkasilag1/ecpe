@@ -41,7 +41,10 @@ import org.gcn.plinguacore.util.psystem.rule.IPriorityRule;
 
 import org.gcn.plinguacore.util.RandomNumbersGenerator;
 
-
+//START
+import org.gcn.plinguacore.util.psystem.Configuration;
+import java.util.Collections;
+//END
 
 public final class NonDeterministicTransitionSimulator extends
 		CellLikeSimulator {
@@ -96,6 +99,29 @@ public final class NonDeterministicTransitionSimulator extends
 					}
 				}
 			}
+		
+	}
+
+	
+	protected void microStepSelectRulesCME(Configuration tmpCnf, Configuration m) {	
+		// TODO Auto-generated method stub
+	
+		int n=2;
+		
+		List<IRule> allRules = new ArrayList<IRule>();
+		allRules.addAll(getPsystem().getEvolutionRules());
+		allRules.addAll(getPsystem().getCommunicationRules());
+
+		for (int i=n;i>0;i--)
+		{
+			Collections.shuffle(allRules);
+			Iterator<IRule> it = allRules.iterator();
+				
+			while (it.hasNext()) {
+				IRule r = it.next();
+				locateAndExecuteRule(r, tmpCnf, m, i);
+			}
+		}
 		
 	}
 
